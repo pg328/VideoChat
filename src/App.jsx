@@ -64,6 +64,15 @@ const App = () => {
     useEffect(async () => {
         await getLocalStream();
         key ? await answer() : await call();
+
+        return () => {
+            const callDoc = firestore.collection('calls').doc();
+            const offerCandidates = callDoc.collection('offerCandidates');
+            const answerCandidates = callDoc.collection('answerCandidates');
+            offerCandidates.doc().delete();
+            answerCandidates.doc().delete();
+            callDoc.delete();
+        };
     });
 
     const call = async () => {
@@ -199,10 +208,11 @@ const App = () => {
 export default App;
 
 const SelfVideo = styled.video`
-& {
-	transform: rotateY(180deg);
-	-webkit-transform:rotateY(180deg);
-	-moz-transform:rotateY(180deg);}
+    & {
+        transform: rotateY(180deg);
+        -webkit-transform: rotateY(180deg);
+        -moz-transform: rotateY(180deg);
+    }
 `;
 const LinkLayer = ({tr, ...props}) => {
     const [show, setShow] = useState(true);
