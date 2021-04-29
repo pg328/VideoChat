@@ -25,6 +25,7 @@ export const ToggleVideoButton = ({remoteVideoRef, ...props}) => {
             <Button
                 label={<Text weight={500}>{!isHidden ? `Hide Video` : `Show Video`}</Text>}
                 plain
+                focusIndicator={false}
                 onClick={toggleVideo}
             ></Button>
         </Box>

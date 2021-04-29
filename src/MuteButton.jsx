@@ -25,6 +25,7 @@ export const MuteButton = ({remoteVideoRef, ...props}) => {
             <Button
                 label={<Text weight={500}>{!isMuted ? `Mute` : `Unmute`}</Text>}
                 plain
+                focusIndicator={false}
                 onClick={toggleMuted}
             ></Button>
         </Box>

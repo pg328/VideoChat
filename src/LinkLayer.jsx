@@ -17,6 +17,7 @@ export const LinkLayer = ({tr, ...props}) => {
                                 <Button
                                     label={<Text weight={500}>{`(Click me to copy the link 😎)`}</Text>}
                                     plain
+                                    focusIndicator={false}
                                     onClick={() => {
                                         navigator.clipboard.writeText(window.location.href + tr.current);
                                         //console.log(tr.current.length);

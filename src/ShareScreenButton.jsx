@@ -25,6 +25,7 @@ export const ShareScreenButton = ({pc, getSharedStream, getLocalStream, ...props
             <Button
                 label={<Text weight={500}>{!isSharing ? `Share Screen` : `Stop Sharing Screen`}</Text>}
                 plain
+                focusIndicator={false}
                 onClick={onClick}
             ></Button>
         </Box>
