@@ -257,7 +257,7 @@ const App = () => {
                         <Box width="100%" height="100%" justify="center">
                             <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
                         </Box>
-                        <Box direction="row" justify="around">
+                        <Box className="hides" direction="row" justify="around" gap="small">
                             <MuteButton remoteVideoRef={localVideo} />
                             <ToggleVideoButton remoteVideoRef={localVideo} />
                             <ShareScreenButton
