@@ -1,10 +1,13 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
-import {Box, Button, Layer, Stack, Text} from 'grommet';
-import React, {useEffect, useRef, useState} from 'react';
+import {Box, Stack} from 'grommet';
+import React, {useEffect, useRef} from 'react';
 import {useParams} from 'react-router-dom';
-import styled from 'styled-components';
 import './App.css';
+import {LinkLayer} from './LinkLayer';
+import {MuteButton} from './MuteButton';
+import {ToggleVideoButton} from './ToggleVideoButton';
+import {SelfVideo} from './SelfVideo';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -16,8 +19,6 @@ const firebaseConfig = {
     messagingSenderId: '564284935763',
     appId: '1:564284935763:web:6385d3814826d24f2540a6',
 };
-const theme = {orange: '#E4572E', darkblue: '#29335C', yellow: '#F3A712', green: '#A8C686', lightblue: '#669BBC'};
-
 const App = () => {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     let {id} = useParams();
@@ -230,7 +231,10 @@ const App = () => {
                         <Box width="100%" height="100%" justify="center">
                             <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
                         </Box>
-                        <MuteButton remoteVideoRef={remoteVideo} />
+                        <Box direction="row" justify="around">
+                            <MuteButton remoteVideoRef={localVideo} />
+                            <ToggleVideoButton remoteVideoRef={localVideo} />
+                        </Box>
                     </Stack>
                     <Box width="small">
                         <SelfVideo
@@ -248,69 +252,3 @@ const App = () => {
 };
 
 export default App;
-
-const SelfVideo = styled.video`
-    & {
-        transform: rotateY(180deg);
-        -webkit-transform: rotateY(180deg);
-        -moz-transform: rotateY(180deg);
-    }
-`;
-const LinkLayer = ({tr, ...props}) => {
-    const [show, setShow] = useState(true);
-    return (
-        <Box>
-            {show && (
-                <Layer responsive position="center">
-                    <Box background={theme.yellow} round="small">
-                        <Box round="medium" width="large" direction="row" justify="center" align="center">
-                            <Text>{`Psst, here's a lil link to send to ur pals 😏😏: `}</Text>
-                        </Box>
-                        <Box round="medium" width="large" direction="row" justify="center" align="center">
-                            <Box elevation="medium" background={theme.green} round="medium">
-                                <Button
-                                    label={<Text weight={500}>{`(Click me to copy the link 😎)`}</Text>}
-                                    plain
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href + tr.current);
-                                        //console.log(tr.current.length);
-                                        setShow(false);
-                                    }}
-                                ></Button>
-                            </Box>
-                        </Box>
-                    </Box>
-                </Layer>
-            )}
-        </Box>
-    );
-};
-
-const MuteButton = ({remoteVideoRef, ...props}) => {
-    const [isMuted, setIsMuted] = useState(false);
-
-    const toggleMuted = () => {
-        setIsMuted(!isMuted);
-    };
-
-    if (remoteVideoRef?.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getAudioTracks()[0].enabled = !isMuted;
-        console.log('Muted: ', remoteVideoRef.current.srcObject.getAudioTracks()[0].enabled);
-    }
-
-    return (
-        <Box
-            elevation="medium"
-            pad="small"
-            margin="large"
-            background={!isMuted ? theme.green : theme.orange}
-            round="medium"
-        >
-            <Button
-                label={<Text weight={500}>{!isMuted ? `Mute` : `Unmute`}</Text>}
-                plain
-                onClick={toggleMuted}
-            ></Button>
-        </Box>
-    );
-};
