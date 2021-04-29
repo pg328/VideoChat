@@ -8,6 +8,7 @@ import {LinkLayer} from './LinkLayer';
 import {MuteButton} from './MuteButton';
 import {ToggleVideoButton} from './ToggleVideoButton';
 import {SelfVideo} from './SelfVideo';
+import {ShareScreenButton} from './ShareScreenButton';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -36,23 +37,48 @@ const App = () => {
 
     let localStream = null;
     let remoteStream = null;
+    let videoSender = null;
+    let audioSender = null;
 
     const localVideo = useRef();
     const remoteVideo = useRef();
     const textRef = useRef();
-
-    const getLocalStream = async () => {
+    const getInitialLocalStream = async () => {
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         remoteStream = new MediaStream();
 
-        // Push tracks from local stream to peer connection
-        localStream.getTracks().forEach((track) => {
-            pc.addTrack(track, localStream);
-        });
+        let camVideoTrack = localStream.getVideoTracks()[0];
+        let camAudioTrack = localStream.getAudioTracks()[0];
+
+        // Push tracks from local store
+        videoSender = pc.addTrack(camVideoTrack, localStream);
+        audioSender = pc.addTrack(camAudioTrack, localStream);
 
         // Show stream in HTML video
         localVideo.current.srcObject = localStream;
         remoteVideo.current.srcObject = remoteStream;
+    };
+    const getLocalStream = async () => {
+        localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+        // Push tracks from local store
+        // Show stream in HTML video
+        localVideo.current.srcObject.getTracks().forEach((track) => {
+            track.stop();
+        });
+        localVideo.current.srcObject = localStream;
+
+        videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+    };
+    const getSharedStream = async (displayMediaOptions) => {
+        let sharedStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+
+        localVideo.current.srcObject.getTracks().forEach((track) => {
+            track.stop();
+        });
+        // Show stream in HTML video
+        localVideo.current.srcObject = sharedStream;
+
+        videoSender.replaceTrack(sharedStream.getVideoTracks()[0]);
     };
     // Pull tracks from remote stream, add to video stream
     pc.ontrack = (event) => {
@@ -62,7 +88,7 @@ const App = () => {
         });
     };
     useEffect(async () => {
-        await getLocalStream();
+        await getInitialLocalStream();
         id ? await answer() : await call();
 
         return () => {
@@ -234,6 +260,12 @@ const App = () => {
                         <Box direction="row" justify="around">
                             <MuteButton remoteVideoRef={localVideo} />
                             <ToggleVideoButton remoteVideoRef={localVideo} />
+                            <ShareScreenButton
+                                localVideoRef={localVideo}
+                                pc={pc}
+                                getSharedStream={getSharedStream}
+                                getLocalStream={getLocalStream}
+                            />
                         </Box>
                     </Stack>
                     <Box width="small">
