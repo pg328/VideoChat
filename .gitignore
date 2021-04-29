@@ -3,3 +3,5 @@ node_modules
 dist
 dist-ssr
 *.local
+dist/index.html
+dist/assets/index.4bc2bdd2.css

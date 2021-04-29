@@ -1,16 +1,15 @@
-import React, {useEffect, useRef, useState} from 'react';
-import ReactDOM from 'react-dom';
-import logo from './logo.svg';
-import './App.css';
-import {Box, Button, Layer, Stack, Text, TextInput, Video} from 'grommet';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
+import {Box, Button, Layer, Stack, Text} from 'grommet';
+import React, {useEffect, useRef, useState} from 'react';
+import {useParams} from 'react-router-dom';
 import styled from 'styled-components';
+import './App.css';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: 'AIzaSyACAdlUJqq_FYg5beq2FG_GLExWvmGRCAU',
+    apiid: 'AIzaSyACAdlUJqq_FYg5beq2FG_GLExWvmGRCAU',
     authDomain: 'philvidchat.firebaseapp.com',
     projectId: 'philvidchat',
     storageBucket: 'philvidchat.appspot.com',
@@ -21,6 +20,7 @@ const theme = {orange: '#E4572E', darkblue: '#29335C', yellow: '#F3A712', green:
 
 const App = () => {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    let {id} = useParams();
 
     const firestore = firebase.firestore();
     const servers = {
@@ -39,7 +39,6 @@ const App = () => {
     const localVideo = useRef();
     const remoteVideo = useRef();
     const textRef = useRef();
-    const key = window.location.href.split('/')[3];
 
     const getLocalStream = async () => {
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
@@ -58,12 +57,12 @@ const App = () => {
     pc.ontrack = (event) => {
         event.streams[0].getTracks().forEach((track) => {
             remoteStream.addTrack(track);
-            console.log(remoteStream);
+            //console.log(remoteStream);
         });
     };
     useEffect(async () => {
         await getLocalStream();
-        key ? await answer() : await call();
+        id ? await answer() : await call();
 
         return () => {
             const callDoc = firestore.collection('calls').doc();
@@ -81,79 +80,100 @@ const App = () => {
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
+        // Listen for remote answer
+        let removeAnswerListener = callDoc.onSnapshot((snapshot) => {
+            const data = snapshot.data();
+            if (data?.answer) {
+                const answerDescription = new RTCSessionDescription(data.answer);
+                if (pc.currentRemoteDescription) {
+                    setTimeout(() => {}, 10000);
+                }
+                pc.setRemoteDescription(answerDescription);
+                console.log(`Answer: `);
+                console.log(answerDescription.sdp.search(/relay/) === -1);
+            }
+        });
+
+        // Listen for remote ICE candidates
+        let removeAnswerCandidateListener = answerCandidates.onSnapshot((snapshot) => {
+            //console.log('New Answer Candidate Snapshot!');
+            //console.log(snapshot.docChanges());
+            snapshot.docChanges().forEach((change) => {
+                //console.log('Change has happened...');
+                if (change.type === 'added') {
+                    //console.log('The change was an addition!');
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    pc.addIceCandidate(candidate);
+                    //console.log('Answered!');
+                }
+            });
+        });
+
         // callInput is a DOM input text box
         textRef.current = callDoc.id;
 
-        console.log(`Code: ${textRef.current}`);
-        console.log('1. Creating ICE candidate listener');
+        //console.log(`Code: ${textRef.current}`);
+        //console.log('1. Creating ICE candidate listener');
         // Get candidates for caller, save to db
         pc.onicecandidate = (event) => {
-            console.log('4. New (Offer) ICE Candidate Event'); //missing
-            console.log(event);
+            //console.log('4. New (Offer) ICE Candidate Event'); //missing
+            //console.log(event);
             event.candidate && offerCandidates.add(event.candidate.toJSON());
         };
-        console.log('2. Created!');
+        //console.log('2. Created!');
+
+        pc.oniceconnectionstatechange = async function (event) {
+            if (
+                pc.iceConnectionState === 'failed' ||
+                pc.iceConnectionState === 'disconnected' ||
+                pc.iceConnectionState === 'closed'
+            ) {
+                pc.onicecandidate = null;
+                textRef.current = null;
+                //await callDoc.set({offer: null});
+                call();
+            }
+        };
 
         // Create offer
-        console.log('3. Offer Creation');
+        //console.log('3. Offer Creation');
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
+        console.log(`Offer: `);
+        console.log(offerDescription.sdp.search(/relay/) === -1);
 
         const offer = {
             sdp: offerDescription.sdp,
             type: offerDescription.type,
         };
         await callDoc.set({offer});
-        console.log('5. Set the offer');
-
-        // Listen for remote answer
-        callDoc.onSnapshot((snapshot) => {
-            const data = snapshot.data();
-            if (!pc.currentRemoteDescription && data?.answer) {
-                const answerDescription = new RTCSessionDescription(data.answer);
-                pc.setRemoteDescription(answerDescription);
-                console.log('Data.Answer Updated!');
-            }
-        });
-
-        // Listen for remote ICE candidates
-        answerCandidates.onSnapshot((snapshot) => {
-            console.log('New Answer Candidate Snapshot!');
-            console.log(snapshot.docChanges());
-            snapshot.docChanges().forEach((change) => {
-                console.log('Change has happened...');
-                if (change.type === 'added') {
-                    console.log('The change was an addition!');
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.addIceCandidate(candidate);
-                    console.log('Answered!');
-                }
-            });
-        });
+        //console.log('5. Set the offer');
     };
 
     const answer = async () => {
-        const callId = key;
+        const callId = id;
         const callDoc = firestore.collection('calls').doc(callId);
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
-        console.log('1. Creating ICE candidate listener');
+        //console.log('1. Creating ICE candidate listener');
         pc.onicecandidate = (event) => {
-            console.log('4/5. New (Answer) ICE Candidate Event');
-            console.log(event);
+            //console.log('4/5. New (Answer) ICE Candidate Event');
+            //console.log(event);
             event.candidate && answerCandidates.add(event.candidate.toJSON());
         };
-        console.log('2. Created!');
+        //console.log('2. Created!');
 
         // Fetch data, then set the offer & answer
         const callData = (await callDoc.get()).data();
 
-        console.log('3. Offer Description');
         const offerDescription = callData.offer;
+        //if (callData.offer) {
+        //console.log('3. Offer Description');
         await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
+        console.log(offerDescription);
 
-        console.log('4. Answer Description');
+        //console.log('4. Answer Description');
         const answerDescription = await pc.createAnswer();
         await pc.setLocalDescription(answerDescription);
 
@@ -163,33 +183,55 @@ const App = () => {
         };
 
         await callDoc.update({answer});
-        console.log('6. Answer Updated!');
+        //}
+        //console.log('6. Answer Updated!');
 
         // Listen to offer candidates
 
+        //callDoc.onSnapshot((snapshot) => {
+        //    const data = snapshot.data();
+        //    if (data?.offer !== offerDescription) {
+        //        let answer = {};
+        //        const offerDescription = callData.offer;
+        //        pc.setRemoteDescription(new RTCSessionDescription(offerDescription))
+        //            .then(() => {
+        //                return pc.createAnswer();
+        //            })
+        //            .then((answerDescription) => {
+        //                answer = {
+        //                    type: answerDescription.type,
+        //                    sdp: answerDescription.sdp,
+        //                };
+        //                pc.setLocalDescription(answerDescription);
+        //                return answer;
+        //            })
+        //            .then((answer) => callDoc.update({answer}));
+        //    }
+        //});
         offerCandidates.onSnapshot((snapshot) => {
-            console.log('New Offer Candidate Snapshot');
-            console.log(snapshot.docChanges());
+            //console.log('New Offer Candidate Snapshot');
+            //console.log(snapshot.docChanges());
             snapshot.docChanges().forEach((change) => {
-                console.log('New doc Change');
                 if (change.type === 'added') {
-                    console.log('Change was an addition');
                     let data = change.doc.data();
                     pc.addIceCandidate(new RTCIceCandidate(data));
-                    console.log('ICE candidate Added!');
+                    //console.log('ICE candidate Added!');
                 }
             });
         });
     };
 
     return (
-        <Box a11yTitle="Body" fill>
-            {!key && <LinkLayer tr={textRef} />}
-            <Box>
-                <Stack anchor="top-right">
-                    <Box>
-                        <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
-                    </Box>
+        <Box a11yTitle="Body" width="100vw" height="100vh" background="black">
+            {!id && <LinkLayer tr={textRef} />}
+            <Box width="100vw" height="100vh">
+                <Stack anchor="top-right" fill>
+                    <Stack anchor="bottom" fill>
+                        <Box width="100%" height="100%" justify="center">
+                            <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
+                        </Box>
+                        <MuteButton remoteVideoRef={remoteVideo} />
+                    </Stack>
                     <Box width="small">
                         <SelfVideo
                             aria-label="Local Stream"
@@ -231,7 +273,7 @@ const LinkLayer = ({tr, ...props}) => {
                                     plain
                                     onClick={() => {
                                         navigator.clipboard.writeText(window.location.href + tr.current);
-                                        console.log(tr.current.length);
+                                        //console.log(tr.current.length);
                                         setShow(false);
                                     }}
                                 ></Button>
@@ -240,6 +282,35 @@ const LinkLayer = ({tr, ...props}) => {
                     </Box>
                 </Layer>
             )}
+        </Box>
+    );
+};
+
+const MuteButton = ({remoteVideoRef, ...props}) => {
+    const [isMuted, setIsMuted] = useState(false);
+
+    const toggleMuted = () => {
+        setIsMuted(!isMuted);
+    };
+
+    if (remoteVideoRef?.current?.srcObject) {
+        remoteVideoRef.current.srcObject.getAudioTracks()[0].enabled = !isMuted;
+        console.log('Muted: ', remoteVideoRef.current.srcObject.getAudioTracks()[0].enabled);
+    }
+
+    return (
+        <Box
+            elevation="medium"
+            pad="small"
+            margin="large"
+            background={!isMuted ? theme.green : theme.orange}
+            round="medium"
+        >
+            <Button
+                label={<Text weight={500}>{!isMuted ? `Mute` : `Unmute`}</Text>}
+                plain
+                onClick={toggleMuted}
+            ></Button>
         </Box>
     );
 };
