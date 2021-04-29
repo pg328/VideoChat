@@ -5,13 +5,13 @@ import {theme} from './theme';
 export const ShareScreenButton = ({pc, getSharedStream, getLocalStream, ...props}) => {
     const [isSharing, setIsSharing] = useState(false);
 
-    const onClick = () => {
+    const onClick = async () => {
         if (isSharing) {
+            await getLocalStream();
             setIsSharing(!isSharing);
-            getLocalStream();
         } else {
+            await getSharedStream();
             setIsSharing(!isSharing);
-            getSharedStream();
         }
     };
     return (
