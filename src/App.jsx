@@ -1,7 +1,7 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import {Box, Stack} from 'grommet';
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import './App.css';
 import {LinkLayer} from './LinkLayer';
@@ -10,6 +10,7 @@ import {ToggleVideoButton} from './ToggleVideoButton';
 import {SelfVideo} from './SelfVideo';
 import {ShareScreenButton} from './ShareScreenButton';
 import {theme} from './theme';
+import {PIPButton} from './PIPButton';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -267,6 +268,7 @@ const App = () => {
                             justify="around"
                             gap="small"
                         >
+                            <PIPButton remoteVideoRef={localVideo} />
                             <MuteButton remoteVideoRef={localVideo} />
                             <ToggleVideoButton remoteVideoRef={localVideo} />
                             <ShareScreenButton
@@ -279,6 +281,7 @@ const App = () => {
                     </Stack>
                     <Box width="small">
                         <SelfVideo
+                            isFlipped
                             aria-label="Local Stream"
                             autoPlay
                             muted={true}
