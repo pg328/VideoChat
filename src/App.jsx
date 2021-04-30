@@ -264,7 +264,7 @@ const App = () => {
                             overflow="hidden"
                             direction="row"
                             justify="around"
-                            gap="small"
+                            //gap="xsmall"
                         >
                             <PIPButton remoteVideoRef={remoteVideo} />
                             <MuteButton remoteVideoRef={localVideo} />

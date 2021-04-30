@@ -7,11 +7,26 @@ export const GenericVideoButton = ({state, onClick, Icon1, Icon2}) => {
         <Box
             elevation="medium"
             pad="small"
-            margin="medium"
+            margin={{horizontal: 'medium', vertical: 'small'}}
             background={!state ? theme.primary : theme.darkBackground}
             round="medium"
         >
-            <Button label={!state ? <Icon1 /> : <Icon2 />} plain focusIndicator={false} onClick={onClick}></Button>
+            <Button
+                label={
+                    !state ? (
+                        <Box a11yTitle="ff">
+                            <Icon1 width={'40px'} height={'40px'} />
+                        </Box>
+                    ) : (
+                        <Box>
+                            <Icon2 width={'40px'} height={'40px'} />
+                        </Box>
+                    )
+                }
+                plain
+                focusIndicator={false}
+                onClick={onClick}
+            ></Button>
         </Box>
     );
 };
