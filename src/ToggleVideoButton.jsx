@@ -18,8 +18,8 @@ export const ToggleVideoButton = ({remoteVideoRef, ...props}) => {
         <Box
             elevation="medium"
             pad="small"
-            margin="large"
-            background={!isHidden ? theme.green : theme.orange}
+            margin="medium"
+            background={!isHidden ? theme.primary : theme.darkBackground}
             round="medium"
         >
             <Button

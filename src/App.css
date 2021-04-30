@@ -4,7 +4,7 @@ video {
 }
 
 .hides {
-    transform: translateY(100%);
+    transform: translateY(90%);
     transition: all 0.7s ease;
 }
 .hides:hover {

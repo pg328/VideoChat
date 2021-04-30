@@ -9,6 +9,7 @@ import {MuteButton} from './MuteButton';
 import {ToggleVideoButton} from './ToggleVideoButton';
 import {SelfVideo} from './SelfVideo';
 import {ShareScreenButton} from './ShareScreenButton';
+import {theme} from './theme';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -249,7 +250,7 @@ const App = () => {
     };
 
     return (
-        <Box a11yTitle="Body" width="100vw" height="100vh" background="black">
+        <Box a11yTitle="Body" overflow="hidden" width="100vw" height="100vh" background="black">
             {!id && <LinkLayer tr={textRef} />}
             <Box width="100vw" height="100vh">
                 <Stack anchor="top-right" fill>
@@ -257,7 +258,15 @@ const App = () => {
                         <Box width="100%" height="100%" justify="center">
                             <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
                         </Box>
-                        <Box className="hides" direction="row" justify="around" gap="small">
+                        <Box
+                            className="hides"
+                            round="medium"
+                            background={theme.lightBackground}
+                            overflow="hidden"
+                            direction="row"
+                            justify="around"
+                            gap="small"
+                        >
                             <MuteButton remoteVideoRef={localVideo} />
                             <ToggleVideoButton remoteVideoRef={localVideo} />
                             <ShareScreenButton

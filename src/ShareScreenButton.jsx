@@ -18,8 +18,8 @@ export const ShareScreenButton = ({pc, getSharedStream, getLocalStream, ...props
         <Box
             elevation="medium"
             pad="small"
-            margin="large"
-            background={!isSharing ? theme.green : theme.orange}
+            margin="medium"
+            background={!isSharing ? theme.primary : theme.darkBackground}
             round="medium"
         >
             <Button

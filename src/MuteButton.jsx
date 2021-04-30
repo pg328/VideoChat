@@ -18,8 +18,8 @@ export const MuteButton = ({remoteVideoRef, ...props}) => {
         <Box
             elevation="medium"
             pad="small"
-            margin="large"
-            background={!isMuted ? theme.green : theme.orange}
+            margin="medium"
+            background={!isMuted ? theme.primary : theme.darkBackground}
             round="medium"
         >
             <Button
