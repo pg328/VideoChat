@@ -4,13 +4,10 @@ import {Box, Stack} from 'grommet';
 import React, {useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import './App.css';
+import ButtonBar from './ButtonBar';
 import {LinkLayer} from './LinkLayer';
-import {MuteButton} from './MuteButton';
-import {ToggleVideoButton} from './ToggleVideoButton';
 import {SelfVideo} from './SelfVideo';
-import {ShareScreenButton} from './ShareScreenButton';
 import {theme} from './theme';
-import {PIPButton} from './PIPButton';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -42,6 +39,8 @@ const App = () => {
     let videoSender = null;
     let audioSender = null;
 
+    const camAudioTrack = {track: null};
+
     const localVideo = useRef();
     const remoteVideo = useRef();
     const textRef = useRef();
@@ -50,11 +49,11 @@ const App = () => {
         remoteStream = new MediaStream();
 
         let camVideoTrack = localStream.getVideoTracks()[0];
-        let camAudioTrack = localStream.getAudioTracks()[0];
+        camAudioTrack.track = localStream.getAudioTracks()[0];
 
         // Push tracks from local store
         videoSender = pc.addTrack(camVideoTrack, localStream);
-        audioSender = pc.addTrack(camAudioTrack, localStream);
+        audioSender = pc.addTrack(camAudioTrack.track, localStream);
 
         // Show stream in HTML video
         localVideo.current.srcObject = localStream;
@@ -264,16 +263,15 @@ const App = () => {
                             overflow="hidden"
                             direction="row"
                             justify="around"
-                            //gap="xsmall"
                         >
-                            <PIPButton remoteVideoRef={remoteVideo} />
-                            <MuteButton remoteVideoRef={localVideo} />
-                            <ToggleVideoButton remoteVideoRef={localVideo} />
-                            <ShareScreenButton
-                                localVideoRef={localVideo}
-                                pc={pc}
-                                getSharedStream={getSharedStream}
-                                getLocalStream={getLocalStream}
+                            <ButtonBar
+                                {...{
+                                    remoteVideo,
+                                    localVideo,
+                                    getSharedStream,
+                                    getLocalStream,
+                                    pc,
+                                }}
                             />
                         </Box>
                     </Stack>

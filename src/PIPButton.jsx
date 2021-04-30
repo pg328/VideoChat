@@ -5,7 +5,7 @@ import {theme} from './theme';
 import PIP from './icons/PIP.jsx';
 import PIPOff from './icons/PIPOff.jsx';
 
-export const PIPButton = ({remoteVideoRef, ...props}) => {
+const PIPButton = ({remoteVideoRef, ...props}) => {
     const [isPIP, setIsPIP] = useState(false);
 
     const togglePIP = () => {
@@ -19,3 +19,5 @@ export const PIPButton = ({remoteVideoRef, ...props}) => {
 
     return <GenericVideoButton state={isPIP} onClick={togglePIP} Icon1={PIP} Icon2={PIPOff} />;
 };
+
+export default PIPButton;
