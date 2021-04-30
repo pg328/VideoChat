@@ -1,6 +1,9 @@
 import {Box, Button, Text} from 'grommet';
 import React, {useState} from 'react';
+import {GenericVideoButton} from './GenericVideoButton';
 import {theme} from './theme';
+import Mic from './icons/Mic';
+import MicOff from './icons/MicOff';
 
 export const MuteButton = ({remoteVideoRef, ...props}) => {
     const [isMuted, setIsMuted] = useState(false);
@@ -14,20 +17,5 @@ export const MuteButton = ({remoteVideoRef, ...props}) => {
         //console.log('Muted: ', remoteVideoRef.current.srcObject.getAudioTracks()[0].enabled);
     }
 
-    return (
-        <Box
-            elevation="medium"
-            pad="small"
-            margin="medium"
-            background={!isMuted ? theme.primary : theme.darkBackground}
-            round="medium"
-        >
-            <Button
-                label={<Text weight={500}>{!isMuted ? `Mute` : `Unmute`}</Text>}
-                plain
-                focusIndicator={false}
-                onClick={toggleMuted}
-            ></Button>
-        </Box>
-    );
+    return <GenericVideoButton state={isMuted} onClick={toggleMuted} Icon1={Mic} Icon2={MicOff} />;
 };

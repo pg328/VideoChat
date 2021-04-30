@@ -1,6 +1,9 @@
 import {Box, Button, Text} from 'grommet';
 import React, {useState} from 'react';
+import {GenericVideoButton} from './GenericVideoButton';
 import {theme} from './theme';
+import PIP from './icons/PIP.jsx';
+import PIPOff from './icons/PIPOff.jsx';
 
 export const PIPButton = ({remoteVideoRef, ...props}) => {
     const [isPIP, setIsPIP] = useState(false);
@@ -14,20 +17,5 @@ export const PIPButton = ({remoteVideoRef, ...props}) => {
         }
     };
 
-    return (
-        <Box
-            elevation="medium"
-            pad="small"
-            margin="medium"
-            background={!isPIP ? theme.primary : theme.darkBackground}
-            round="medium"
-        >
-            <Button
-                label={<Text weight={500}>{!isPIP ? `PiP` : `UnPiP`}</Text>}
-                plain
-                focusIndicator={false}
-                onClick={togglePIP}
-            ></Button>
-        </Box>
-    );
+    return <GenericVideoButton state={isPIP} onClick={togglePIP} Icon1={PIP} Icon2={PIPOff} />;
 };

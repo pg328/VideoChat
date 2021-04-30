@@ -70,13 +70,11 @@ const App = () => {
         localVideo.current.srcObject = localStream;
 
         videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+        audioSender.replaceTrack(localStream.getAudioTracks()[0]);
     };
     const getSharedStream = async (displayMediaOptions) => {
         let sharedStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
 
-        localVideo.current.srcObject.getTracks().forEach((track) => {
-            track.stop();
-        });
         // Show stream in HTML video
         localVideo.current.srcObject = sharedStream;
 
@@ -268,7 +266,7 @@ const App = () => {
                             justify="around"
                             gap="small"
                         >
-                            <PIPButton remoteVideoRef={localVideo} />
+                            <PIPButton remoteVideoRef={remoteVideo} />
                             <MuteButton remoteVideoRef={localVideo} />
                             <ToggleVideoButton remoteVideoRef={localVideo} />
                             <ShareScreenButton

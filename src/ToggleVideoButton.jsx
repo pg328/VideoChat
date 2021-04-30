@@ -1,5 +1,8 @@
 import {Box, Button, Text} from 'grommet';
 import React, {useState} from 'react';
+import {GenericVideoButton} from './GenericVideoButton';
+import VideoIcon from './icons/VideoIcon';
+import VideoOff from './icons/VideoOff';
 import {theme} from './theme';
 
 export const ToggleVideoButton = ({remoteVideoRef, ...props}) => {
@@ -14,20 +17,5 @@ export const ToggleVideoButton = ({remoteVideoRef, ...props}) => {
         //console.log('Video Off: ', remoteVideoRef.current.srcObject.getVideoTracks()[0].enabled);
     }
 
-    return (
-        <Box
-            elevation="medium"
-            pad="small"
-            margin="medium"
-            background={!isHidden ? theme.primary : theme.darkBackground}
-            round="medium"
-        >
-            <Button
-                label={<Text weight={500}>{!isHidden ? `Hide Video` : `Show Video`}</Text>}
-                plain
-                focusIndicator={false}
-                onClick={toggleVideo}
-            ></Button>
-        </Box>
-    );
+    return <GenericVideoButton state={isHidden} onClick={toggleVideo} Icon1={VideoIcon} Icon2={VideoOff} />;
 };

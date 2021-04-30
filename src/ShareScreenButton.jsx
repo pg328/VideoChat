@@ -1,6 +1,9 @@
-import {Box, Button, Text} from 'grommet';
+import {Text} from 'grommet';
 import React, {useState} from 'react';
-import {theme} from './theme';
+import ScreenShare from './icons/ScreenShare';
+import StopScreenShare from './icons/StopScreenShare';
+import styled from 'styled-components';
+import {GenericVideoButton} from './GenericVideoButton';
 
 export const ShareScreenButton = ({pc, getSharedStream, getLocalStream, ...props}) => {
     const [isSharing, setIsSharing] = useState(false);
@@ -14,20 +17,5 @@ export const ShareScreenButton = ({pc, getSharedStream, getLocalStream, ...props
             setIsSharing(!isSharing);
         }
     };
-    return (
-        <Box
-            elevation="medium"
-            pad="small"
-            margin="medium"
-            background={!isSharing ? theme.primary : theme.darkBackground}
-            round="medium"
-        >
-            <Button
-                label={<Text weight={500}>{!isSharing ? `Share Screen` : `Stop Sharing Screen`}</Text>}
-                plain
-                focusIndicator={false}
-                onClick={onClick}
-            ></Button>
-        </Box>
-    );
+    return <GenericVideoButton state={isSharing} onClick={onClick} Icon1={ScreenShare} Icon2={StopScreenShare} />;
 };
