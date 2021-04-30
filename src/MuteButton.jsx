@@ -12,7 +12,7 @@ const MuteButton = ({localStream, pc, ...props}) => {
 
     const toggleMuted = () => {
         isSharing
-            ? alert("Can't mute while screen sharing yet, sorry!")
+            ? alert("Can't mute or unmute while screen sharing yet, sorry!")
             : localStream.current?.srcObject?.getAudioTracks?.()[0] && setIsMuted(!isMuted);
     };
 
