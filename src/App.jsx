@@ -114,7 +114,7 @@ const App = () => {
 
     const call = async () => {
         // Reference Firestore collections for signaling
-        const callDoc = firestore.collection('calls').doc();
+        const callDoc = firestore.collection('calls').doc('aquarium');
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
@@ -137,13 +137,9 @@ const App = () => {
                     }
                 });
             }),
-            setLink(callDoc.id);
-        !callDoc.id &&
-            alert("Please call Phil! This is a bug that's hard to reproduce! \n Number is 07484188198! Thanks - Phil");
-
-        pc.onicecandidate = (event) => {
-            event.candidate && offerCandidates.add(event.candidate.toJSON());
-        };
+            (pc.onicecandidate = (event) => {
+                event.candidate && offerCandidates.add(event.candidate.toJSON());
+            });
 
         pc.oniceconnectionstatechange = async function (event) {
             if (
@@ -170,7 +166,7 @@ const App = () => {
     };
 
     const answer = async () => {
-        const callId = id;
+        const callId = 'aquarium';
         const callDoc = firestore.collection('calls').doc(callId);
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
