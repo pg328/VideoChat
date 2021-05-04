@@ -99,27 +99,34 @@ const App = () => {
     };
     useEffect(async () => {
         await getInitialLocalStream();
-        id ? console.info('answering...') : console.info('calling...');
-        id ? await answer() : await call();
 
-        return () => {
-            const callDoc = firestore.collection('calls').doc();
-            const offerCandidates = callDoc.collection('offerCandidates');
-            const answerCandidates = callDoc.collection('answerCandidates');
-            offerCandidates.doc().delete();
-            answerCandidates.doc().delete();
-            callDoc.delete();
-        };
+        let callDoc = firestore.collection('calls').doc('aquarium');
+        let hasAnswer = (await callDoc.get()).data().answer;
+        hasAnswer ? console.info('offering...') : console.info('answering...');
+
+        hasAnswer ? await call() : await answer();
+
+        //return () => {
+        //    const callDoc = firestore.collection('calls').doc();
+        //    const offerCandidates = callDoc.collection('offerCandidates');
+        //    const answerCandidates = callDoc.collection('answerCandidates');
+        //    offerCandidates.doc().delete();
+        //    answerCandidates.doc().delete();
+        //    callDoc.delete();
+        //};
     }, []);
 
     const call = async () => {
         // Reference Firestore collections for signaling
+        //firestore.collection('calls').doc('aquarium').delete();
         const callDoc = firestore.collection('calls').doc('aquarium');
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
+        (await offerCandidates.get()).forEach((f) => offerCandidates.doc(f.id).delete());
+        (await answerCandidates.get()).forEach((f) => answerCandidates.doc(f.id).delete());
+
         // Listen for remote answer
-        //setRemoveAnswerListener(() =>
         callDoc.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (data?.answer) {
@@ -225,7 +232,6 @@ const App = () => {
 
     return (
         <Box a11yTitle="Body" overflow="hidden" width="100vw" height="100vh" background="black">
-            {!id && <LinkLayer link={link} />}
             <Box width="100vw" height="100vh">
                 <Stack anchor="top-right" fill>
                     <Stack anchor="bottom" fill>
