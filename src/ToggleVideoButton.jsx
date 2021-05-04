@@ -5,15 +5,15 @@ import VideoIcon from './icons/VideoIcon';
 import VideoOff from './icons/VideoOff';
 import {theme} from './theme';
 
-const ToggleVideoButton = ({remoteVideoRef, ...props}) => {
+const ToggleVideoButton = ({localStream, ...props}) => {
     const [isHidden, setIsHidden] = useState(false);
 
     const toggleVideo = () => {
         setIsHidden(!isHidden);
     };
 
-    if (remoteVideoRef?.current?.srcObject) {
-        remoteVideoRef.current.srcObject.getVideoTracks()[0].enabled = !isHidden;
+    if (localStream) {
+        localStream.getVideoTracks()[0].enabled = !isHidden;
         //console.log('Video Off: ', remoteVideoRef.current.srcObject.getVideoTracks()[0].enabled);
     }
 

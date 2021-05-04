@@ -1,6 +1,7 @@
 import styled from 'styled-components';
+import VideoElem from './VideoElem';
 
-export const SelfVideo = styled.video`
+const SelfVideo = styled(VideoElem)`
     & {
         ${(props) =>
             props.isFlipped &&
@@ -10,3 +11,5 @@ export const SelfVideo = styled.video`
         -moz-transform: rotateY(180deg);`}
     }
 `;
+
+export default SelfVideo;

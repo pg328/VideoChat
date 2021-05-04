@@ -5,20 +5,14 @@ import ScreenSharingContext from './ScreenSharingContext';
 import ShareScreenButton from './ShareScreenButton';
 import ToggleVideoButton from './ToggleVideoButton';
 
-const ButtonBar = ({remoteVideo, localVideo, localStream, getSharedStream, getLocalStream, pc}) => {
-    const [isSharing, setIsSharing] = useState(false);
+const ButtonBar = ({remoteStream, sharedStream, localStream, getSharedStream, getLocalStream, pc}) => {
     return (
-        <ScreenSharingContext.Provider value={{isSharing, setIsSharing}}>
-            <PIPButton remoteVideoRef={remoteVideo} />
-            <MuteButton localStream={localVideo} />
-            <ToggleVideoButton remoteVideoRef={localVideo} />
-            <ShareScreenButton
-                localVideoRef={localVideo}
-                pc={pc}
-                getSharedStream={getSharedStream}
-                getLocalStream={getLocalStream}
-            />
-        </ScreenSharingContext.Provider>
+        <>
+            <PIPButton />
+            <MuteButton localStream={localStream} />
+            <ToggleVideoButton localStream={localStream} />
+            <ShareScreenButton getSharedStream={getSharedStream} getLocalStream={getLocalStream} />
+        </>
     );
 };
 

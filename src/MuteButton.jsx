@@ -11,13 +11,14 @@ const MuteButton = ({localStream, pc, ...props}) => {
     const [isMuted, setIsMuted] = useState(false);
 
     const toggleMuted = () => {
-        isSharing
-            ? alert("Can't mute or unmute while screen sharing yet, sorry!")
-            : localStream.current?.srcObject?.getAudioTracks?.()[0] && setIsMuted(!isMuted);
+        //isSharing
+        //    ? alert("Can't mute or unmute while screen sharing yet, sorry!")
+        //:
+        localStream?.getAudioTracks?.()[0] && setIsMuted(!isMuted);
     };
 
-    if (localStream.current?.srcObject?.getAudioTracks?.()[0]) {
-        localStream.current.srcObject.getAudioTracks()[0].enabled = !isMuted;
+    if (localStream?.getAudioTracks?.()[0]) {
+        localStream.getAudioTracks()[0].enabled = !isMuted;
     }
 
     return <GenericVideoButton state={isMuted} onClick={toggleMuted} Icon1={Mic} Icon2={MicOff} />;

@@ -1,13 +1,15 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import {Box, Stack} from 'grommet';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {createRef, useEffect, useRef, useState} from 'react';
 import {useParams} from 'react-router-dom';
 import './App.css';
 import ButtonBar from './ButtonBar';
 import {LinkLayer} from './LinkLayer';
-import {SelfVideo} from './SelfVideo';
+import ScreenSharingContext from './ScreenSharingContext';
+import SelfVideo from './SelfVideo';
 import {theme} from './theme';
+import VideoElem from './VideoElem';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -32,62 +34,72 @@ const App = () => {
         ],
         iceCandidatePoolSize: 10,
     };
-    const pc = new RTCPeerConnection(servers);
+    const [pc, setPC] = useState(new RTCPeerConnection(servers));
 
-    let localStream = null;
-    let remoteStream = null;
-    let videoSender = null;
-    let audioSender = null;
-
-    const camAudioTrack = {track: null};
+    const [sharedStream, setSharedStream] = useState(null);
+    const [localStream, setLocalStream] = useState(null);
+    const [remoteStream, setRemoteStream] = useState(null);
+    const [videoSender, setVideoSender] = useState(null);
+    const [audioSender, setAudioSender] = useState(null);
+    const [isSharing, setIsSharing] = useState(false);
 
     const localVideo = useRef();
     const remoteVideo = useRef();
-    const textRef = useRef();
+    const [link, setLink] = useState();
     const getInitialLocalStream = async () => {
-        localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-        remoteStream = new MediaStream();
+        let stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+        setLocalStream(stream);
+        setRemoteStream(new MediaStream());
 
-        let camVideoTrack = localStream.getVideoTracks()[0];
-        camAudioTrack.track = localStream.getAudioTracks()[0];
+        let camVideoTrack = stream.getVideoTracks()[0];
+        let camAudioTrack = stream.getAudioTracks()[0];
 
         // Push tracks from local store
-        videoSender = pc.addTrack(camVideoTrack, localStream);
-        audioSender = pc.addTrack(camAudioTrack.track, localStream);
-
-        // Show stream in HTML video
-        localVideo.current.srcObject = localStream;
-        remoteVideo.current.srcObject = remoteStream;
+        setVideoSender(pc.addTrack(camVideoTrack, stream));
+        setAudioSender(pc.addTrack(camAudioTrack, stream));
     };
     const getLocalStream = async () => {
-        localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+        let stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         // Push tracks from local store
         // Show stream in HTML video
-        localVideo.current.srcObject.getTracks().forEach((track) => {
-            track.stop();
-        });
-        localVideo.current.srcObject = localStream;
+        let vt = stream.getVideoTracks()[0];
+        //setVideoSender((v) => v.replaceTrack(stream.getVideoTracks()[0]));
+        videoSender.replaceTrack(stream.getVideoTracks()[0]);
+        //audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+        console.info('Track settings:');
+        console.info(JSON.stringify(vt.getSettings(), null, 2));
+        console.info('Track constraints:');
+        console.info(JSON.stringify(vt.getConstraints(), null, 2));
+        let tracks = sharedStream.getTracks();
 
-        videoSender.replaceTrack(localStream.getVideoTracks()[0]);
-        audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+        tracks.forEach((track) => track.stop());
     };
     const getSharedStream = async (displayMediaOptions) => {
-        let sharedStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+        let stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+        setSharedStream(stream);
 
-        // Show stream in HTML video
-        localVideo.current.srcObject = sharedStream;
+        //// Show stream in HTML video
+        //setLocalStream(sharedStream);
 
-        videoSender.replaceTrack(sharedStream.getVideoTracks()[0]);
+        let vt = stream.getVideoTracks()[0];
+        videoSender.replaceTrack(stream.getVideoTracks()[0]);
+        console.info('Track settings:');
+        console.info(JSON.stringify(vt.getSettings(), null, 2));
+        console.info('Track constraints:');
+        console.info(JSON.stringify(vt.getConstraints(), null, 2));
     };
     // Pull tracks from remote stream, add to video stream
     pc.ontrack = (event) => {
         event.streams[0].getTracks().forEach((track) => {
-            remoteStream.addTrack(track);
-            //console.log(remoteStream);
+            setRemoteStream((r) => {
+                r.addTrack(track);
+                return r;
+            });
         });
     };
     useEffect(async () => {
         await getInitialLocalStream();
+        id ? console.info('answering...') : console.info('calling...');
         id ? await answer() : await call();
 
         return () => {
@@ -98,7 +110,7 @@ const App = () => {
             answerCandidates.doc().delete();
             callDoc.delete();
         };
-    });
+    }, []);
 
     const call = async () => {
         // Reference Firestore collections for signaling
@@ -107,46 +119,31 @@ const App = () => {
         const answerCandidates = callDoc.collection('answerCandidates');
 
         // Listen for remote answer
-        let removeAnswerListener = callDoc.onSnapshot((snapshot) => {
+        //setRemoveAnswerListener(() =>
+        callDoc.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
-                if (pc.currentRemoteDescription) {
-                    setTimeout(() => {}, 10000);
-                }
                 pc.setRemoteDescription(answerDescription);
-                console.log(`Answer: `);
-                console.log(answerDescription.sdp.search(/relay/) === -1);
+                console.info(`Answer: `);
+                console.info(answerDescription.sdp.search(/relay/) === -1);
             }
-        });
+        }),
+            answerCandidates.onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        pc.addIceCandidate(candidate);
+                    }
+                });
+            }),
+            setLink(callDoc.id);
+        !callDoc.id &&
+            alert("Please call Phil! This is a bug that's hard to reproduce! \n Number is 07484188198! Thanks - Phil");
 
-        // Listen for remote ICE candidates
-        let removeAnswerCandidateListener = answerCandidates.onSnapshot((snapshot) => {
-            //console.log('New Answer Candidate Snapshot!');
-            //console.log(snapshot.docChanges());
-            snapshot.docChanges().forEach((change) => {
-                //console.log('Change has happened...');
-                if (change.type === 'added') {
-                    //console.log('The change was an addition!');
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.addIceCandidate(candidate);
-                    //console.log('Answered!');
-                }
-            });
-        });
-
-        // callInput is a DOM input text box
-        textRef.current = callDoc.id;
-
-        //console.log(`Code: ${textRef.current}`);
-        //console.log('1. Creating ICE candidate listener');
-        // Get candidates for caller, save to db
         pc.onicecandidate = (event) => {
-            //console.log('4. New (Offer) ICE Candidate Event'); //missing
-            //console.log(event);
             event.candidate && offerCandidates.add(event.candidate.toJSON());
         };
-        //console.log('2. Created!');
 
         pc.oniceconnectionstatechange = async function (event) {
             if (
@@ -155,25 +152,21 @@ const App = () => {
                 pc.iceConnectionState === 'closed'
             ) {
                 pc.onicecandidate = null;
-                textRef.current = null;
-                //await callDoc.set({offer: null});
                 call();
             }
         };
 
         // Create offer
-        //console.log('3. Offer Creation');
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
-        console.log(`Offer: `);
-        console.log(offerDescription.sdp.search(/relay/) === -1);
+        console.info(`Offer: `);
+        console.info(offerDescription.sdp.search(/relay/) === -1);
 
         const offer = {
             sdp: offerDescription.sdp,
             type: offerDescription.type,
         };
         await callDoc.set({offer});
-        //console.log('5. Set the offer');
     };
 
     const answer = async () => {
@@ -182,24 +175,16 @@ const App = () => {
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
-        //console.log('1. Creating ICE candidate listener');
         pc.onicecandidate = (event) => {
-            //console.log('4/5. New (Answer) ICE Candidate Event');
-            //console.log(event);
             event.candidate && answerCandidates.add(event.candidate.toJSON());
         };
-        //console.log('2. Created!');
 
         // Fetch data, then set the offer & answer
         const callData = (await callDoc.get()).data();
 
         const offerDescription = callData.offer;
-        //if (callData.offer) {
-        //console.log('3. Offer Description');
         await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
-        console.log(offerDescription);
 
-        //console.log('4. Answer Description');
         const answerDescription = await pc.createAnswer();
         await pc.setLocalDescription(answerDescription);
 
@@ -209,8 +194,6 @@ const App = () => {
         };
 
         await callDoc.update({answer});
-        //}
-        //console.log('6. Answer Updated!');
 
         // Listen to offer candidates
 
@@ -235,13 +218,10 @@ const App = () => {
         //    }
         //});
         offerCandidates.onSnapshot((snapshot) => {
-            //console.log('New Offer Candidate Snapshot');
-            //console.log(snapshot.docChanges());
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     let data = change.doc.data();
                     pc.addIceCandidate(new RTCIceCandidate(data));
-                    //console.log('ICE candidate Added!');
                 }
             });
         });
@@ -249,12 +229,18 @@ const App = () => {
 
     return (
         <Box a11yTitle="Body" overflow="hidden" width="100vw" height="100vh" background="black">
-            {!id && <LinkLayer tr={textRef} />}
+            {!id && <LinkLayer link={link} />}
             <Box width="100vw" height="100vh">
                 <Stack anchor="top-right" fill>
                     <Stack anchor="bottom" fill>
                         <Box width="100%" height="100%" justify="center">
-                            <video aria-label="Remote Stream" autoPlay playsInline ref={remoteVideo}></video>
+                            <VideoElem
+                                aria-label="Remote Stream"
+                                autoPlay
+                                playsInline
+                                srcObject={remoteStream}
+                                ref={remoteVideo}
+                            ></VideoElem>
                         </Box>
                         <Box
                             className="hides"
@@ -264,15 +250,18 @@ const App = () => {
                             direction="row"
                             justify="around"
                         >
-                            <ButtonBar
-                                {...{
-                                    remoteVideo,
-                                    localVideo,
-                                    getSharedStream,
-                                    getLocalStream,
-                                    pc,
-                                }}
-                            />
+                            <ScreenSharingContext.Provider value={{isSharing, setIsSharing, remoteVideo}}>
+                                <ButtonBar
+                                    {...{
+                                        remoteStream,
+                                        localStream,
+                                        sharedStream,
+                                        getSharedStream,
+                                        getLocalStream,
+                                        pc,
+                                    }}
+                                />
+                            </ScreenSharingContext.Provider>
                         </Box>
                     </Stack>
                     <Box width="small">
@@ -282,6 +271,7 @@ const App = () => {
                             autoPlay
                             muted={true}
                             playsInline
+                            srcObject={isSharing ? sharedStream : localStream}
                             ref={localVideo}
                         ></SelfVideo>
                     </Box>
