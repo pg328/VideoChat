@@ -13,7 +13,7 @@ export const Routes = () => {
                     <App />
                 </Route>
                 <Route path="/about">
-                    <></>
+                    <>Hello! this is the about page!</>
                 </Route>
                 <Route path="/dashboard">
                     <></>
