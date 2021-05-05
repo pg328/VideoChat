@@ -2,7 +2,7 @@ import firebase from 'firebase/app';
 import 'firebase/firestore';
 import {Box, Stack} from 'grommet';
 import React, {createRef, useEffect, useRef, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {useLocation, useParams} from 'react-router-dom';
 import './App.css';
 import ButtonBar from './ButtonBar';
 import {LinkLayer} from './LinkLayer';
@@ -10,6 +10,7 @@ import ScreenSharingContext from './ScreenSharingContext';
 import SelfVideo from './SelfVideo';
 import {theme} from './theme';
 import VideoElem from './VideoElem';
+import queryString from 'query-string';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -23,7 +24,8 @@ const firebaseConfig = {
 };
 const App = () => {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    let {id} = useParams();
+    const location = useLocation();
+    const id = queryString.parse(location.search)['callId'];
 
     const firestore = firebase.firestore();
     const servers = {
@@ -45,7 +47,7 @@ const App = () => {
 
     const localVideo = useRef();
     const remoteVideo = useRef();
-    const [link, setLink] = useState();
+    const [callId, setCallId] = useState();
     const getInitialLocalStream = async () => {
         let stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         setLocalStream(stream);
@@ -137,7 +139,7 @@ const App = () => {
                     }
                 });
             }),
-            setLink(callDoc.id);
+            setCallId(callDoc.id);
         !callDoc.id &&
             alert("Please call Phil! This is a bug that's hard to reproduce! \n Number is 07484188198! Thanks - Phil");
 
@@ -170,8 +172,7 @@ const App = () => {
     };
 
     const answer = async () => {
-        const callId = id;
-        const callDoc = firestore.collection('calls').doc(callId);
+        const callDoc = firestore.collection('calls').doc(id);
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
@@ -229,7 +230,7 @@ const App = () => {
 
     return (
         <Box a11yTitle="Body" overflow="hidden" width="100vw" height="100vh" background="black">
-            {!id && <LinkLayer link={link} />}
+            {!id && <LinkLayer callId={callId} />}
             <Box width="100vw" height="100vh">
                 <Stack anchor="top-right" fill>
                     <Stack anchor="bottom" fill>

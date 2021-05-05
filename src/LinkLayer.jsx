@@ -2,7 +2,7 @@ import {Box, Button, Layer, Text} from 'grommet';
 import React, {useState} from 'react';
 import {theme} from './theme';
 
-export const LinkLayer = ({link, ...props}) => {
+export const LinkLayer = ({callId, ...props}) => {
     const [show, setShow] = useState(true);
     return (
         <Box>
@@ -19,7 +19,7 @@ export const LinkLayer = ({link, ...props}) => {
                                     plain
                                     focusIndicator={false}
                                     onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href + link);
+                                        navigator.clipboard.writeText(window.location.href + '?callId=' + callId);
                                         //console.log(tr.current.length);
                                         setShow(false);
                                     }}
