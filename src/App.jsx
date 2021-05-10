@@ -1,6 +1,6 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
-import {Box, Stack} from 'grommet';
+import {Box, Button, Stack, TextInput} from 'grommet';
 import React, {createRef, useEffect, useRef, useState} from 'react';
 import {useLocation, useParams} from 'react-router-dom';
 import './App.css';
@@ -39,15 +39,19 @@ const App = () => {
     const [pc, setPC] = useState(new RTCPeerConnection(servers));
 
     const [sharedStream, setSharedStream] = useState(null);
+    const [messages, setMessages] = useState([{}, {}, {}, {}, {}]);
     const [localStream, setLocalStream] = useState(null);
     const [remoteStream, setRemoteStream] = useState(null);
     const [videoSender, setVideoSender] = useState(null);
     const [audioSender, setAudioSender] = useState(null);
     const [isSharing, setIsSharing] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [messageValue, setMessageValue] = useState('');
 
     const localVideo = useRef();
     const remoteVideo = useRef();
     const [callId, setCallId] = useState();
+    const [DC, setDC] = useState();
     const getInitialLocalStream = async () => {
         let stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         setLocalStream(stream);
@@ -120,6 +124,15 @@ const App = () => {
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
+        setDC(() => {
+            let dc = pc.createDataChannel('Chat');
+            dc.onmessage = (e) => {
+                setMessages((m) => {
+                    return [...m, {yours: false, message: e.data}];
+                });
+            };
+            return dc;
+        });
         // Listen for remote answer
         //setRemoveAnswerListener(() =>
         callDoc.onSnapshot((snapshot) => {
@@ -170,12 +183,26 @@ const App = () => {
         };
         await callDoc.set({offer});
     };
-
+    const sendMessage = () => {
+        setMessages((m) => {
+            setMessageValue('');
+            DC ? DC.send(messageValue) : pc.dc.send(messageValue);
+            return [...m, {yours: true, message: messageValue}];
+        });
+    };
     const answer = async () => {
         const callDoc = firestore.collection('calls').doc(id);
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
 
+        pc.ondatachannel = (e) => {
+            pc.dc = e.channel;
+            pc.dc.onmessage = (e) => {
+                setMessages((m) => {
+                    return [...m, {yours: false, message: e.data}];
+                });
+            };
+        };
         pc.onicecandidate = (event) => {
             event.candidate && answerCandidates.add(event.candidate.toJSON());
         };
@@ -234,7 +261,7 @@ const App = () => {
             <Box width="100vw" height="100vh">
                 <Stack anchor="top-right" fill>
                     <Stack anchor="bottom" fill>
-                        <Box width="100%" height="100%" justify="center">
+                        <Box width="100%" height="100%" direction="row" justify="center">
                             <VideoElem
                                 aria-label="Remote Stream"
                                 autoPlay
@@ -242,6 +269,32 @@ const App = () => {
                                 srcObject={remoteStream}
                                 ref={remoteVideo}
                             ></VideoElem>
+                            {isChatOpen && (
+                                <Stack anchor="bottom">
+                                    <Box fill="vertical" width="large" background={theme.darkBackground}>
+                                        {messages.map(({yours, message}) => (
+                                            <Box
+                                                pad={{vertical: 'small'}}
+                                                width="100%"
+                                                direction="row"
+                                                justify={yours ? 'end' : 'start'}
+                                                key={message}
+                                            >
+                                                {yours ? 'you: ' : 'them: '}
+                                                {message}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                    <Stack anchor="right">
+                                        <TextInput
+                                            placeholder="type here"
+                                            value={messageValue}
+                                            onChange={(event) => setMessageValue(event.target.value)}
+                                        />
+                                        <Button onClick={sendMessage} />
+                                    </Stack>
+                                </Stack>
+                            )}
                         </Box>
                         <Box
                             className="hides"
@@ -260,6 +313,9 @@ const App = () => {
                                         getSharedStream,
                                         getLocalStream,
                                         pc,
+                                        DC,
+                                        isChatOpen,
+                                        setIsChatOpen,
                                     }}
                                 />
                             </ScreenSharingContext.Provider>

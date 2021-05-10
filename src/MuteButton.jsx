@@ -6,7 +6,7 @@ import Mic from './icons/Mic';
 import MicOff from './icons/MicOff';
 import ScreenSharingContext from './ScreenSharingContext';
 
-const MuteButton = ({localStream, pc, ...props}) => {
+const MuteButton = ({localStream, pc, DC, ...props}) => {
     const {isSharing, setIsSharing} = useContext(ScreenSharingContext);
     const [isMuted, setIsMuted] = useState(false);
 
