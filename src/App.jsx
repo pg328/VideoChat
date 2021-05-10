@@ -1,6 +1,6 @@
 import firebase from 'firebase/app';
 import 'firebase/firestore';
-import {Box, Button, Stack, TextInput} from 'grommet';
+import {Box, Button, Keyboard, Stack, Text, TextInput} from 'grommet';
 import React, {createRef, useEffect, useRef, useState} from 'react';
 import {useLocation, useParams} from 'react-router-dom';
 import './App.css';
@@ -271,28 +271,52 @@ const App = () => {
                             ></VideoElem>
                             {isChatOpen && (
                                 <Stack anchor="bottom">
-                                    <Box fill="vertical" width="large" background={theme.darkBackground}>
-                                        {messages.map(({yours, message}) => (
-                                            <Box
-                                                pad={{vertical: 'small'}}
-                                                width="100%"
-                                                direction="row"
-                                                justify={yours ? 'end' : 'start'}
-                                                key={message}
-                                            >
-                                                {yours ? 'you: ' : 'them: '}
-                                                {message}
-                                            </Box>
-                                        ))}
+                                    <Box
+                                        fill="vertical"
+                                        width="large"
+                                        overflow="scroll"
+                                        background={theme.darkBackground}
+                                    >
+                                        {messages.map(
+                                            ({yours, message}, index) =>
+                                                messages.length - index <= 10 && (
+                                                    <Box
+                                                        pad={'small'}
+                                                        width="100%"
+                                                        direction="row"
+                                                        justify={yours ? 'end' : 'start'}
+                                                        key={message}
+                                                    >
+                                                        {yours ? 'me: ' : 'them: '}
+                                                        {message}
+                                                    </Box>
+                                                ),
+                                        )}
                                     </Box>
-                                    <Stack anchor="right">
-                                        <TextInput
-                                            placeholder="type here"
-                                            value={messageValue}
-                                            onChange={(event) => setMessageValue(event.target.value)}
-                                        />
-                                        <Button onClick={sendMessage} />
-                                    </Stack>
+                                    <Box margin={{bottom: 'xlarge'}}>
+                                        <Stack anchor="right">
+                                            <Box background={theme.darkAccent}>
+                                                <Keyboard onEnter={sendMessage}>
+                                                    <TextInput
+                                                        placeholder="type here"
+                                                        plain
+                                                        focusIndicator={false}
+                                                        value={messageValue}
+                                                        onChange={(event) => setMessageValue(event.target.value)}
+                                                    />
+                                                </Keyboard>
+                                            </Box>
+                                            <Button
+                                                plain
+                                                label={
+                                                    <Box round="small" background={theme.primary}>
+                                                        <Text>{'Send'}</Text>
+                                                    </Box>
+                                                }
+                                                onClick={sendMessage}
+                                            />
+                                        </Stack>
+                                    </Box>
                                 </Stack>
                             )}
                         </Box>
