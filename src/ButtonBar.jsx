@@ -23,7 +23,7 @@ const ButtonBar = ({
             <MuteButton pc={pc} DC={DC} localStream={localStream} />
             <ToggleVideoButton localStream={localStream} />
             <ShareScreenButton getSharedStream={getSharedStream} getLocalStream={getLocalStream} />
-            <ChatButton isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} />
+            {/*<ChatButton isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} />*/}
         </>
     );
 };

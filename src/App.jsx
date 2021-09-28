@@ -11,6 +11,7 @@ import SelfVideo from './SelfVideo';
 import {theme} from './theme';
 import VideoElem from './VideoElem';
 import queryString from 'query-string';
+import { getMessagesAPI, sendMessageAPI } from './Message';
 
 const videoStyle = ' transform: rotateY(180deg); -webkit-transform:rotateY(180deg); -moz-transform:rotateY(180deg); ';
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -107,6 +108,8 @@ const App = () => {
         await getInitialLocalStream();
         id ? console.info('answering...') : console.info('calling...');
         id ? await answer() : await call();
+		const messages = await getMessagesAPI()
+		setMessages(messages);
 
         return () => {
             const callDoc = firestore.collection('calls').doc();
@@ -128,7 +131,7 @@ const App = () => {
             let dc = pc.createDataChannel('Chat');
             dc.onmessage = (e) => {
                 setMessages((m) => {
-                    return [...m, {yours: false, message: e.data}];
+                    return [...m, {yours: false, content: e.data, message_id: m.length ? m[m.length-1] :  0}];
                 });
             };
             return dc;
@@ -183,23 +186,23 @@ const App = () => {
         };
         await callDoc.set({offer});
     };
-    const sendMessage = () => {
+    const sendMessage = (hash) => {
         setMessages((m) => {
             setMessageValue('');
-            DC ? DC.send(messageValue) : pc.dc.send(messageValue);
-            return [...m, {yours: true, message: messageValue}];
+			DC ? DC.send(messageValue) : pc.dc.send(messageValue);
+            sendMessageAPI(hash, messageValue);
+            return [...m, {yours: true, content: messageValue, message_id: m.length ? m[m.length-1] :  0}];
         });
     };
     const answer = async () => {
         const callDoc = firestore.collection('calls').doc(id);
         const offerCandidates = callDoc.collection('offerCandidates');
         const answerCandidates = callDoc.collection('answerCandidates');
-
         pc.ondatachannel = (e) => {
             pc.dc = e.channel;
             pc.dc.onmessage = (e) => {
                 setMessages((m) => {
-                    return [...m, {yours: false, message: e.data}];
+                    return [...m, {yours: false, content: e.data, message_id: m.length ? m[m.length-1] :  0}];
                 });
             };
         };
@@ -278,17 +281,17 @@ const App = () => {
                                         background={theme.darkBackground}
                                     >
                                         {messages.map(
-                                            ({yours, message}, index) =>
+                                            ({yours, content, message_id}, index) =>
                                                 messages.length - index <= 10 && (
-                                                    <Box
+													<Box
+														key={message_id}
                                                         pad={'small'}
                                                         width="100%"
                                                         direction="row"
                                                         justify={yours ? 'end' : 'start'}
-                                                        key={message}
                                                     >
                                                         {yours ? 'me: ' : 'them: '}
-                                                        {message}
+                                                        {content}
                                                     </Box>
                                                 ),
                                         )}
@@ -296,7 +299,7 @@ const App = () => {
                                     <Box margin={{bottom: 'xlarge'}}>
                                         <Stack anchor="right">
                                             <Box background={theme.darkAccent}>
-                                                <Keyboard onEnter={sendMessage}>
+                                                <Keyboard onEnter={() => { id ? sendMessage(id) : sendMessage(callId) }}>
                                                     <TextInput
                                                         placeholder="type here"
                                                         plain
@@ -313,7 +316,7 @@ const App = () => {
                                                         <Text>{'Send'}</Text>
                                                     </Box>
                                                 }
-                                                onClick={sendMessage}
+												onClick={() => { id ? sendMessage(id) : sendMessage(callId) }}
                                             />
                                         </Stack>
                                     </Box>
